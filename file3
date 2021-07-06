@@ -89,7 +89,18 @@ def train_single_scale(netD,netG,reals,Gs,Zs,in_s,NoiseAmp,opt,last,centers=None
             if (Gs == []) & (opt.mode != 'SR_train'):
                 noise = noise_
             else:
-                noise = opt.noise_amp*noise_+prev
+                if last:
+                    tmp_noise = opt.noise_amp*noise_
+                    original_prev = prev
+                    prev = draw_concat(Gs[:-1], Zs[:-1], reals[:-1], NoiseAmp[:-1], in_s, 'rand', m_noise, m_image, opt)
+                    prev = imresize(prev,1/opt.scale_factor,opt)
+                    prev = prev[:,:,0:reals[-1].shape[2],0:reals[-1].shape[3]]
+                    prev = m_image(prev)
+                    noise = tmp_noise + prev
+                    prev = original_prev
+                else:
+                    noise = opt.noise_amp*noise_+prev
+
 
             fake = netG(noise.detach(),prev)
             output = netD(fake.detach())
